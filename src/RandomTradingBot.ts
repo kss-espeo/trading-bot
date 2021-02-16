@@ -6,9 +6,11 @@ import BestPrice from "./types/BestPrice";
 const bigdecimal = require("bigdecimal");
 
 class RandomTradingBot implements TradingBot {
-  private deversefiApiClient = new DeversefiHttpClient();
 
   private orders: Order[] = [];
+
+  public constructor(private readonly deversefiApiClient: DeversefiHttpClient) {
+  }
 
   async trade(balance: { ETH, USD }): Promise<void> {
     const bestPrices = await this.deversefiApiClient.ticker('ETH:USDT');

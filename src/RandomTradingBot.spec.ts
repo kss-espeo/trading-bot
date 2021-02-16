@@ -1,37 +1,48 @@
-import { describe, it, beforeEach } from 'mocha';
+import {afterEach, beforeEach, describe, it} from 'mocha';
+import * as sinon from 'sinon';
 import RandomTradingBot from "./RandomTradingBot";
-const { expect } = require('chai').use(require('dirty-chai'));
+import {OrderType} from "./types/Order";
+import DeversefiHttpClient from "./DeversefiHttpClient";
+
+const bigdecimal = require("bigdecimal");
+
+const {expect} = require('chai').use(require('dirty-chai'));
 
 describe('RandomTradingBot', () => {
+  const SOME_BID = 200;
+  const SOME_ASK = 300;
+  const SOME_BALANCE = {
+    ETH: new bigdecimal.BigDecimal('100'),
+    USD: new bigdecimal.BigDecimal('10000')
+  };
+
   let sut;
+  let deversefiApiMock = new DeversefiHttpClient();
 
   beforeEach(() => {
-    sut = new RandomTradingBot();
+    sut = new RandomTradingBot(deversefiApiMock);
   });
 
-  it('should accept ipfs content type', () => {
+
+  afterEach(() => {
+    deversefiApiMock = new DeversefiHttpClient();
+  });
+
+  it('should add bid/ask orders within 5% of best bid/ask price', () => {
     // given
-    const contentType = 'ipfs';
+    sinon.stub(deversefiApiMock, "ticker").returns(Promise.resolve({bid: SOME_BID, ask: SOME_ASK}));
     // when
-    const result = sut.canHandle(contentType);
+    sut.trade(SOME_BALANCE);
+    sut.trade(SOME_BALANCE);
+    sut.trade(SOME_BALANCE);
     // then
-    expect(result).to.be.true();
-  });
-
-  it('should select always all data', () => {
-    // given
-    const data = 'abcdef';
-    // when
-    const result = sut.select(data, null);
-    // then
-    expect(result).to.equal(data);
-  });
-
-  it('should throw an error when not empty path passed', () => {
-    // given
-    const data = 'abcdef';
-    const path = '/something';
-    // when, then
-    expect(() => sut.select(data, path)).to.throw();
+    (sut as any).orders.filter(order => order.type == OrderType.BID).forEach(bid => {
+      expect(bid.price).to.be.above(SOME_BID * 0.95);
+      expect(bid.price).to.be.below(SOME_BID * 1.05);
+    });
+    (sut as any).orders.filter(order => order.type == OrderType.ASK).forEach(ask => {
+      expect(ask.price).to.be.above(SOME_ASK * 0.95);
+      expect(ask.price).to.be.below(SOME_ASK * 1.05);
+    });
   });
 });

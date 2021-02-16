@@ -1,6 +1,6 @@
 import TradingBot from "./TradingBot";
 import RandomTradingBot from "./RandomTradingBot";
-// import SimpleTradingBot from "./SimpleTradingBot";
+import DeversefiHttpClient from "./DeversefiHttpClient";
 
 const bigdecimal = require("bigdecimal");
 
@@ -10,7 +10,7 @@ let balance = {
 };
 
 const delayMs = 5000;
-const bot: TradingBot = new RandomTradingBot();
+const bot: TradingBot = new RandomTradingBot(new DeversefiHttpClient());
 
 (async () => {
   let delayTicks = 0;
